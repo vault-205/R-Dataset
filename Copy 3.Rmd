@@ -1,0 +1,128 @@
+```{r}
+#install.packages("jsonlite")
+library(jsonlite)
+# Load required libraries
+library(tm)
+library(SnowballC)
+newsgroups <- fromJSON("newsgroups.json")
+# Extract content field
+newsgroups_text <- unlist(lapply(newsgroups$content, paste, collapse = " "))
+# Create a Corpus
+newsgroups_corpus <- Corpus(VectorSource(newsgroups_text))
+```
+
+```{r}
+#1
+# Load required libraries
+library(tm)
+library(SnowballC)
+library(RWeka)
+
+# Create a corpus
+newsgroups_corpus <- Corpus(VectorSource(newsgroups_text))
+
+# Convert all text to lowercase
+newsgroups_corpus <- tm_map(newsgroups_corpus, content_transformer(tolower))
+
+# Remove numbers and punctuations
+newsgroups_corpus <- tm_map(newsgroups_corpus, removeNumbers)
+newsgroups_corpus <- tm_map(newsgroups_corpus, removePunctuation)
+
+# Remove stopwords
+newsgroups_corpus <- tm_map(newsgroups_corpus, removeWords, stopwords("english"))
+
+# Stem the words
+newsgroups_corpus <- tm_map(newsgroups_corpus, stemDocument)
+
+# Remove extra whitespaces
+newsgroups_corpus <- tm_map(newsgroups_corpus, stripWhitespace)
+
+# Create a document-term matrix
+dtm <- DocumentTermMatrix(newsgroups_corpus)
+
+# Create a term-document matrix
+tdm <- TermDocumentMatrix(newsgroups_corpus)
+
+
+```
+
+```{r}
+#2
+
+# Load required libraries
+library(topicmodels)
+
+# Perform LDA
+lda <- LDA(dtm, k = 4)
+
+# Top 5 terms in each topic
+top_terms <- terms(lda, 5)
+print(top_terms)
+
+```
+
+
+```{r}
+#3
+# Load required libraries
+library(lsa)
+library(SentimentAnalysis)
+
+# Set memory limit
+memory.limit(size=5000)
+
+# Create a term-document matrix
+tdm <- TermDocumentMatrix(newsgroups_corpus)
+
+```
+```{r}
+#install.packages("sentiment")
+#library(sentiment)
+# Calculate the sentiment of the documents
+sentiments <- sentiment(tdm)
+
+# Print the sentiments
+print(sentiments)
+
+```
+
+```{r}
+#4
+# Load required libraries
+library(word2vec)
+library(udpipe)
+
+# Tokenize the text
+newsgroups_tokens <- udpipe(newsgroups_text, "english")
+
+# Create a word2vec model
+model <- word2vec(newsgroups_tokens, size = 20, iter = 20)
+
+# Find the top 5 terms nearest to "car"
+nearest_car <- nearest_to_word(model, "car", 5)
+print(nearest_car)
+
+# Find the top 5 terms nearest to "man"
+nearest_man <- nearest_to_word(model, "man", 5)
+print(nearest_man)
+
+
+```
+
+
+```{r}
+#5
+# Create a skip-gram model
+model_sg <- word2vec(newsgroups_tokens, type = "skip-gram", size = 20, iter = 20)
+
+# Find the top 5 terms nearest to "religion"
+nearest_religion <- nearest_to_word(model_sg, "religion", 5)
+print(nearest_religion)
+
+# Find the top 5 terms nearest to "adult"
+nearest_adult <- nearest_to_word(model_sg, "adult", 5)
+print(nearest_adult)
+
+
+```
+

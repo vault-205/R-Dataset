@@ -1,0 +1,106 @@
+```{r}
+#install.packages("jsonlite")
+library(jsonlite)
+# Load required libraries
+library(tm)
+library(SnowballC)
+newsgroups <- fromJSON("newsgroups.json")
+# Extract content field
+newsgroups_text <- unlist(lapply(newsgroups$content, paste, collapse = " "))
+# Create a Corpus
+newsgroups_corpus <- Corpus(VectorSource(newsgroups_text))
+```
+
+```{r}
+#1
+
+# Convert corpus to lowercase
+newsgroups_corpus <- tm_map(newsgroups_corpus, tolower)
+
+# Remove numbers
+newsgroups_corpus <- tm_map(newsgroups_corpus, removeNumbers)
+
+# Remove punctuation
+newsgroups_corpus <- tm_map(newsgroups_corpus, removePunctuation)
+
+# Remove stop words
+newsgroups_corpus <- tm_map(newsgroups_corpus, removeWords, stopwords("english"))
+
+# Stem document
+newsgroups_corpus <- tm_map(newsgroups_corpus, stemDocument)
+
+# Create document-term matrix
+dtm <- DocumentTermMatrix(newsgroups_corpus)
+
+# Create term-document matrix
+tdm <- TermDocumentMatrix(newsgroups_corpus)
+
+```
+
+```{r}
+#2
+# Load required library
+library(topicmodels)
+
+# LDA with 4 topics
+lda <- LDA(dtm, k = 4)
+
+# Top 5 terms in each topic
+terms(lda, 5)
+
+```
+
+```{r}
+#3
+# Load required library
+library(sentimentr)
+
+# Set memory limit (if needed)
+# memory.limit(size = 15000)
+
+# Sentiment analysis using term-document matrix
+sentiment_scores <- sentimentr::sentiment(dtm)
+
+```
+
+```{r}
+#4
+# Install and load libraries
+install.packages("udpipe")
+library(udpipe)
+library(text2vec)
+
+# Create annotations using udpipe
+ud_model <- udpipe_download_model(language = "english")
+ud_model <- udpipe_load_model(ud_model$file_model)
+newsgroups_anno <- udpipe_annotate(ud_model, x = newsgroups_text)
+
+# Create document-term matrix
+newsgroups_dtm <- create_dtm(newsgroups_anno$lemma, 
+                             hash_size = 2^15, ngram = c(1, 1))
+
+# Create word2vec model
+w2v_model <- text2vec::word2vec(newsgroups_dtm, size = 20, iter = 20)
+
+# Find top 5 terms nearest to "car"
+text2vec::find_similar_terms(w2v_model, "car", 5)
+
+# Find top 5 terms nearest to "man"
+text2vec::find_similar_terms(w2v_model, "man", 5)
+
+```
+
+
+```{r}
+#5
+# Create skip-gram model
+sg_model <- text2vec::word2vec(newsgroups_dtm, algorithm = "sg", size = 20, iter = 20)
+
+# Find top 5 terms nearest to "religion"
+text2vec::find_similar_terms(sg_model, "religion", 5)
+
+# Find top 5 terms nearest to "adult"
+text2vec::find_similar_terms(sg_model, "adult", 5)
+
+```
+
